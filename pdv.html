@@ -2,184 +2,155 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>PDV - Churrascaria Avenida</title>
+  <title>PDV – Churrascaria Avenida</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: sans-serif; margin: 0; display: flex; height: 100vh; }
-    #produtos, #caixa { padding: 16px; overflow-y: auto; }
-    #produtos { width: 40%; background: #fafafa; border-right: 1px solid #ddd; }
-    #caixa { width: 60%; }
-    .produto { padding: 8px; margin: 8px 0; background: #fff; border: 1px solid #ccc; cursor: pointer; }
-    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
-    th:first-child, td:first-child { text-align: left; }
-    .remove { color: #c00; cursor: pointer; }
-    .payments { margin-top: 16px; }
-    .payments label { margin-right: 12px; }
-    #qrModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5);
-               align-items:center; justify-content:center; }
-    #qrModal .content { background:#fff; padding:20px; border-radius:4px; text-align:center; }
+    :root { --primary-color: #C62828; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; height: 100vh; background: #f0f0f0; }
+    header { display: flex; align-items: center; background: var(--primary-color); color: #fff; padding: 0.5rem 1rem; position: relative; }
+    .menu-btn, .config-btn { font-size: 1.5rem; cursor: pointer; margin-right: 1rem; }
+    header .logo { position: absolute; left: 50%; transform: translateX(-50%); font-size: 1.5rem; font-weight: bold; cursor: pointer; }
+    .search-bar { width: 100%; padding: 0.5rem; margin-top: 0.5rem; border: 1px solid #ccc; border-radius: 4px; }
+    .cat-nav { background: #fff; display: flex; overflow-x: auto; padding: 0.5rem; border-bottom: 1px solid #ddd; }
+    .cat-nav button { background: none; border: none; padding: 0.5rem 1rem; margin-right: 0.5rem; font-weight: bold; cursor: pointer; }
+    .cat-nav button.active { background: var(--primary-color); color: #fff; border-radius: 4px; }
+    .container { display: flex; flex: 1; overflow: hidden; }
+    .product-grid { flex: 2; background: #fff; padding: 1rem; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 1rem; }
+    .prod-card { background: #fafafa; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; display: flex; flex-direction: column; align-items: center; padding: 0.5rem; position: relative; transition: background 0.2s; }
+    .prod-card:hover { background: #ffe5e5; }
+    .prod-card img { width: 60px; height: 60px; object-fit: cover; margin-bottom: 0.5rem; }
+    .prod-card .name { font-size: 0.9rem; text-align: center; margin-bottom: 0.25rem; }
+    .prod-card .price { font-size: 0.8rem; color: #555; }
+    .badge { position: absolute; top: 6px; right: 6px; background: #FFD54F; color: #333; padding: 2px 4px; border-radius: 4px; font-size: 0.7rem; }
+    .low-stock .badge { background: #D32F2F; color: #fff; }
+    .cart-panel { flex: 1; background: #fff; border-left: 1px solid #ddd; display: flex; flex-direction: column; }
+    .cart-header { padding: 1rem; border-bottom: 1px solid #ddd; display: flex; align-items: center; font-size: 1.2rem; }
+    .cart-header img { height: 32px; margin-right: 0.5rem; }
+    .cart-list { flex: 1; overflow-y: auto; padding: 0 1rem; }
+    .cart-item { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #eee; }
+    .cart-footer { padding: 1rem; border-top: 1px solid #ddd; display: flex; flex-direction: column; gap: 0.5rem; }
+    .subtotal, .total { display: flex; justify-content: space-between; font-size: 1rem; }
+    .total { font-weight: bold; font-size: 1.2rem; }
+    .checkout-btn, .add-value-btn { padding: 0.75rem; background: var(--primary-color); color: #fff; border: none; border-radius: 4px; cursor: pointer; width: 100%; font-size: 1rem; }
+    .add-value-btn { background: #333; }
+    #payModal, #qrModal, #trocoModal, #configModal, #receiptModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+    .modal-content { background: #fff; padding: 2rem; border-radius: 8px; width: 90%; max-width: 500px; }
+    .modal-content h3 { margin-bottom: 1rem; text-align: center; }
+    .payment-options { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem; }
+    .payment-options label { display: flex; align-items: center; gap: 0.5rem; }
+    .modal-content button { padding: 0.75rem; background: var(--primary-color); color: #fff; border: none; border-radius: 4px; cursor: pointer; width: 100%; }
+    .cancel-btn { background: #ddd; color: #000; margin-top: 0.5rem; }
+    .modal-input { margin-bottom: 1rem; }
+    .modal-input input { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; }
+    #qrModal canvas { width: 300px !important; height: 300px !important; }
+    #receiptContent table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+    #receiptContent th, #receiptContent td { border: 1px solid #ddd; padding: 0.5rem; text-align: left; }
+    #receiptContent th { background: #f5f5f5; }
   </style>
 </head>
 <body>
-
-  <!-- Lista de Produtos -->
-  <div id="produtos">
-    <h2>Produtos</h2>
-    <!-- Será preenchido via JavaScript -->
-  </div>
-
-  <!-- Caixa / Carrinho -->
-  <div id="caixa">
-    <h2>Caixa</h2>
-    <table id="carrinho">
-      <thead>
-        <tr><th>Item</th><th>Qtd</th><th>Preço</th><th>Total</th><th></th></tr>
-      </thead>
-      <tbody></tbody>
-      <tfoot>
-        <tr>
-          <th colspan="3">Total:</th>
-          <th id="total-geral">0</th>
-          <th></th>
-        </tr>
-      </tfoot>
-    </table>
-
-    <!-- Métodos de Pagamento -->
-    <div class="payments">
-      <label><input type="radio" name="pagamento" value="dinheiro" checked> Dinheiro</label>
-      <label><input type="radio" name="pagamento" value="cartao"> Cartão</label>
-      <label><input type="radio" name="pagamento" value="pix"> PIX</label>
-      <label><input type="radio" name="pagamento" value="crediario"> Crediário</label>
-    </div>
-    <div id="extras"></div>
-    <button id="finalizar">Finalizar Venda</button>
-  </div>
-
-  <!-- Modal QR Code -->
-  <div id="qrModal">
-    <div class="content">
-      <h3>PIX - Escaneie o QR Code</h3>
-      <div id="qrcode"></div>
-      <button onclick="closeQr()">Cancelar</button>
+  <header>
+    <div class="menu-btn" onclick="toggleSidebar()">☰</div>
+    <div class="config-btn" onclick="openConfig()">⚙️</div>
+    <div class="logo">Churrascaria Avenida</div>
+  </header>
+  <input type="text" id="searchInput" class="search-bar" placeholder="Buscar produto..." oninput="filterProducts()">
+  <div class="cat-nav" id="catNav"></div>
+  <div class="container">
+    <div class="product-grid" id="grid"></div>
+    <div class="cart-panel">
+      <div class="cart-header"><img id="hdrLogo" src="logo.png" alt="Logo"><span>Carrinho</span></div>
+      <div class="cart-list" id="cartList"></div>
+      <div class="cart-footer">
+        <div class="subtotal"><span>Subtotal</span><span id="subtotal">R$ 0,00</span></div>
+        <div class="total"><span>Total</span><span id="total">R$ 0,00</span></div>
+        <button class="checkout-btn" id="checkoutBtn">Pagar</button>
+        <button class="add-value-btn" id="addValueBtn">Adicionar Valor</button>
+      </div>
     </div>
   </div>
 
-  <!-- QRCode.js via CDN -->
+  <!-- Payment Modal -->
+  <div id="payModal"><div class="modal-content">
+    <h3>Selecione forma de pagamento</h3>
+    <div class="payment-options">
+      <label><input type="radio" name="payType" value="dinheiro" checked> Dinheiro</label>
+      <label><input type="radio" name="payType" value="pix"> PIX</label>
+      <label><input type="radio" name="payType" value="cartao"> Cartão</label>
+      <label><input type="radio" name="payType" value="crediario"> Crediário</label>
+    </div>
+    <div class="modal-input" id="inputDinheiro"><input type="number" id="dinheiroVal" placeholder="Valor recebido" step="0.01"></div>
+    <div class="modal-input" id="inputCred"><input type="text" id="credCliente" placeholder="Nome do cliente"></div>
+    <button onclick="confirmPayment()">Confirmar</button>
+    <button class="cancel-btn" onclick="cancelPayment()">Cancelar</button>
+  </div></div>
+
+  <!-- QR Modal -->
+  <div id="qrModal"><div class="modal-content">
+    <h3>PIX – Escaneie o QR Code</h3>
+    <canvas id="qrCanvas" width="300" height="300"></canvas>
+    <button onclick="confirmPix()">Confirmar PIX</button>
+    <button class="cancel-btn" onclick="closeQr()">Cancelar</button>
+  </div></div>
+
+  <!-- Troco Modal -->
+  <div id="trocoModal"><div class="modal-content">
+    <h3>Troco</h3>
+    <p>Valor do troco: <span id="trocoValue">R$ 0,00</span></p>
+    <button onclick="printAndClose()">Imprimir</button>
+    <button class="cancel-btn" onclick="confirmChange()">OK</button>
+  </div></div>
+
+  <!-- Config Modal -->
+  <div id="configModal"><div class="modal-content">
+    <h3>Configurações</h3>
+    <label class="config-input">Logo URL:<input id="logoUrl" type="text" placeholder="https://..."></label>
+    <label class="config-input">Cor primária:<input id="primaryColor" type="color"></label>
+    <button onclick="saveConfig()">Salvar</button>
+    <button class="cancel-btn" onclick="closeConfig()">Cancelar</button>
+  </div></div>
+
+  <!-- Receipt Modal -->
+  <div id="receiptModal"><div class="modal-content" id="receiptContent"></div></div>
+
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script>
-    // Dados iniciais de exemplo
-    const produtos = [
-      { id:1, nome:'Picanha', preco:45, estoque:50 },
-      { id:2, nome:'Frango', preco:30, estoque:100 },
-      { id:3, nome:'Carvão', preco:15, estoque:200 },
-      { id:4, nome:'Refrigerante', preco:8, estoque:80 }
-    ];
-    const carrinho = [];
+    const CNPJ = '12.345.678/0001-90';
+    const ADDRESS = 'Rua Exemplo, 123 - Cidade/UF';
+    const categories = {'Todas': [], 'Comidas': [{id:1,name:'Churrasco',price:50,img:'churrasco.jpg',stock:10}], 'Bebidas': [{id:5,name:'Coca-Cola',price:6,img:'coca.jpg',stock:15}], 'Sobremesa': [{id:9,name:'Picolé',price:4,img:'picole.jpg',stock:2}]};
+    categories.Todas = Object.values(categories).flat();
+    let cart = JSON.parse(localStorage.getItem('cart')||'[]');
+    let lastTotal = 0, lastMethod = '';
 
-    const elProd = document.getElementById('produtos');
-    const tbBody = document.querySelector('#carrinho tbody');
-    const elTotal = document.getElementById('total-geral');
-    const extras = document.getElementById('extras');
+    function loadConfig(){ const logo=localStorage.getItem('logoUrl'), col=localStorage.getItem('primaryColor'); if(logo)document.getElementById('hdrLogo').src=logo; if(col)document.documentElement.style.setProperty('--primary-color',col); }
+    function saveConfig(){ const url=document.getElementById('logoUrl').value, col=document.getElementById('primaryColor').value; if(url){document.getElementById('hdrLogo').src=url; localStorage.setItem('logoUrl',url);} if(col){document.documentElement.style.setProperty('--primary-color',col); localStorage.setItem('primaryColor',col);} closeConfig(); }
+    function openConfig(){document.getElementById('configModal').style.display='flex';} function closeConfig(){document.getElementById('configModal').style.display='none';}
 
-    // Renderiza lista de produtos
-    produtos.forEach(p => {
-      const div = document.createElement('div');
-      div.className = 'produto';
-      div.textContent = `${p.nome} — R$ ${p.preco.toFixed(2)}`;
-      div.onclick = ()=>addCarrinho(p.id);
-      elProd.appendChild(div);
-    });
-
-    // Adiciona item ao carrinho
-    function addCarrinho(id) {
-      let item = carrinho.find(i=>i.id===id);
-      if (!item) {
-        const prod = produtos.find(p=>p.id===id);
-        item = { ...prod, qtd:1 };
-        carrinho.push(item);
-      } else {
-        item.qtd++;
-      }
-      renderCarrinho();
-    }
-
-    // Renderiza o carrinho
-    function renderCarrinho() {
-      tbBody.innerHTML = '';
-      let total = 0;
-      carrinho.forEach(i => {
-        const row = document.createElement('tr');
-        const sub = i.preco * i.qtd;
-        total += sub;
-        row.innerHTML = `
-          <td>${i.nome}</td>
-          <td>${i.qtd}</td>
-          <td>R$ ${i.preco.toFixed(2)}</td>
-          <td>R$ ${sub.toFixed(2)}</td>
-          <td><span class="remove" onclick="removeItem(${i.id})">X</span></td>`;
-        tbBody.appendChild(row);
-      });
-      elTotal.textContent = `R$ ${total.toFixed(2)}`;
-    }
-
-    function removeItem(id) {
-      const idx = carrinho.findIndex(i=>i.id===id);
-      if (idx>-1) carrinho.splice(idx,1);
-      renderCarrinho();
-    }
-
-    // Atualiza inputs extra conforme método
-    document.querySelectorAll('[name=pagamento]').forEach(radio=>{
-      radio.onchange = updateExtras;
-    });
-    function updateExtras() {
-      const m = document.querySelector('[name=pagamento]:checked').value;
-      extras.innerHTML = '';
-      if (m==='dinheiro') {
-        extras.innerHTML = 'Recebido: <input id="recebido" type="number" step="0.01">';
-      } else if (m==='pix') {
-        // nada adicional
-      } else if (m==='crediario') {
-        extras.innerHTML = 'Cliente: <input id="cliente" type="text">';
-      }
-    }
-    updateExtras();
-
-    // Finalizar venda
-    document.getElementById('finalizar').onclick = ()=>{
-      const metodo = document.querySelector('[name=pagamento]:checked').value;
-      const total = parseFloat(elTotal.textContent.replace('R$ ',''));
-      if (metodo==='dinheiro') {
-        const recebido = parseFloat(document.getElementById('recebido').value)||0;
-        alert(`Troco: R$ ${ (recebido - total).toFixed(2) }`);
-        carrinho.length=0; renderCarrinho();
-      }
-      else if (metodo==='cartao') {
-        alert('Venda realizada no cartão!');
-        carrinho.length=0; renderCarrinho();
-      }
-      else if (metodo==='pix') {
-        openQr(total);
-      }
-      else if (metodo==='crediario') {
-        const cliente = document.getElementById('cliente').value.trim();
-        if (!cliente) return alert('Informe o nome do cliente');
-        alert(`Venda a prazo registrada para ${cliente}`);
-        carrinho.length=0; renderCarrinho();
-      }
-    };
-
-    // Modal PIX
-    function openQr(valor) {
-      document.getElementById('qrModal').style.display='flex';
-      const qrEl = document.getElementById('qrcode');
-      qrEl.innerHTML = '';
-      QRCode.toCanvas(qrEl, `PIX://churrascaria?amount=${valor.toFixed(2)}`, { width:200 });
-    }
-    function closeQr() {
-      document.getElementById('qrModal').style.display='none';
-    }
+    function init(){ initCats(); initShortcuts(); renderGrid(categories.Todas); renderCart(); loadConfig(); }
+    function initCats(){ Object.keys(categories).forEach((cat,i)=>{ const b=document.createElement('button'); b.textContent=cat; if(i===0) b.classList.add('active'); b.onclick=()=>selectCat(cat,b); document.getElementById('catNav').appendChild(b); }); }
+    function selectCat(cat,btn){ document.querySelectorAll('.cat-nav button').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderGrid(categories[cat]); }
+    document.getElementById('searchInput').addEventListener('input',filterProducts);
+    function filterProducts(){ const q=this.value.toLowerCase(); document.querySelectorAll('.prod-card').forEach(c=>{ const name=c.querySelector('.name').textContent.toLowerCase(); c.style.display=name.includes(q)?'flex':'none'; }); }
+    function renderGrid(items){ const grid=document.getElementById('grid'); grid.innerHTML=''; items.forEach(p=>{ const c=document.createElement('div'); c.className='prod-card'+(p.stock<=5?' low-stock':''); c.innerHTML=`<img src="${p.img}" alt=""><div class="name">${p.name}</div><div class="price">R$ ${p.price.toFixed(2)}</div><div class="badge">${p.stock}un</div>`; c.onclick=()=>addToCart(p); grid.appendChild(c); }); }
+    function addToCart(p){ let it=cart.find(x=>x.id===p.id); if(!it) cart.push({...p,qty:1}); else it.qty++; saveCart(); renderCart(); }
+    function renderCart(){ const list=document.getElementById('cartList'); list.innerHTML=''; let s=0; cart.forEach(i=>{ const d=document.createElement('div'); d.className='cart-item'; const t=i.price*i.qty; s+=t; d.innerHTML=`<span>${i.qty}x ${i.name}</span><span>R$ ${t.toFixed(2)}</span>`; list.appendChild(d); }); lastTotal=s; document.getElementById('subtotal').textContent=`R$ ${s.toFixed(2)}`; document.getElementById('total').textContent=`R$ ${s.toFixed(2)}`; saveCart(); }
+    function saveCart(){ localStorage.setItem('cart',JSON.stringify(cart)); }
+    document.getElementById('checkoutBtn').onclick=()=>{ document.getElementById('payModal').style.display='flex'; onPayTypeChange(); };
+    document.getElementById('addValueBtn').onclick=()=>{ const v=prompt('Informe valor para adicionar:'); if(v){ cart.push({id:Date.now(),name:'Manual',price:parseFloat(v),qty:1}); renderCart(); } };
+    document.querySelectorAll('input[name=payType]').forEach(r=>r.onchange=onPayTypeChange);
+    function onPayTypeChange(){ const t=document.querySelector('input[name=payType]:checked').value; document.getElementById('inputDinheiro').style.display=t==='dinheiro'?'block':'none'; document.getElementById('inputCred').style.display=t==='crediario'?'block':'none'; }
+    function confirmPayment(){ const t=document.querySelector('input[name=payType]:checked').value; lastMethod=t; document.getElementById('payModal').style.display='none'; if(t==='pix'){ document.getElementById('qrModal').style.display='flex'; QRCode.toCanvas(document.getElementById('qrCanvas'),`PIX://churrascaria?amount=${lastTotal.toFixed(2)}`); } else if(t==='dinheiro'){ const rec=parseFloat(document.getElementById('dinheiroVal').value)||0; const troco=(rec-lastTotal).toFixed(2); document.getElementById('trocoValue').textContent=`R$ ${troco}`; document.getElementById('trocoModal').style.display='flex'; } else if(t==='cartao'){ generateReceipt('Cartão',lastTotal); } else if(t==='crediario'){ const c=document.getElementById('credCliente').value||''; generateReceipt('Crediário',lastTotal,c); } }
+    function cancelPayment(){ document.getElementById('payModal').style.display='none'; }
+    function confirmPix(){ document.getElementById('qrModal').style.display='none'; generateReceipt('PIX',lastTotal); }
+    function closeQr(){ document.getElementById('qrModal').style.display='none'; }
+    function printAndClose(){ generateReceipt('Dinheiro',lastTotal); document.getElementById('trocoModal').style.display='none'; }
+    function confirmChange(){ document.getElementById('trocoModal').style.display='none'; cart=[]; saveCart(); renderCart(); }
+    function generateReceipt(method, amount, customer=''){ const date=new Date().toLocaleString(); let html=`<div style="text-align:center;"><img src='logo.png' alt='Logo' style='height:50px;'><h2>Churrascaria Avenida</h2><p>${ADDRESS}</p><p>CNPJ: ${CNPJ}</p><p>${date}</p><hr></div>`; html+=`<table><thead><tr><th>Item</th><th>Qtd</th><th>Preço</th><th>Total</th></tr></thead><tbody>`; let totalCalc=0; cart.forEach(i=>{const t=i.price*i.qty; totalCalc+=t; html+=`<tr><td>${i.name}</td><td>${i.qty}</td><td>R$ ${i.price.toFixed(2)}</td><td>R$ ${t.toFixed(2)}</td></tr>`;}); html+=`</tbody><tfoot><tr><th colspan='3'>Total</th><th>R$ ${totalCalc.toFixed(2)}</th></tr></tfoot></table>`; html+=`<p>Forma: ${method}</p>`; if(customer) html+=`<p>Cliente: ${customer}</p>`; html+=`<hr><p style='text-align:center;font-size:0.8rem;'>Obrigado pela preferência!</p><button onclick='printReceipt()'>Imprimir</button><button class='cancel-btn' onclick='closeReceipt()'>Fechar</button>`; const rc=document.getElementById('receiptContent'); rc.innerHTML=html; document.getElementById('receiptModal').style.display='flex'; }
+    function printReceipt(){ window.print(); closeReceipt(); }
+    function closeReceipt(){ document.getElementById('receiptModal').style.display='none'; cart=[]; saveCart(); renderCart(); }
+    function initShortcuts(){ document.addEventListener('keydown',e=>{ if(e.key==='F1'){ e.preventDefault(); document.getElementById('searchInput').focus(); } if(e.key==='F2'){ e.preventDefault(); document.getElementById('checkoutBtn').click(); } if(e.key==='Escape'){ document.querySelectorAll('#payModal,#qrModal,#trocoModal,#configModal,#receiptModal').forEach(m=>m.style.display='none'); }}); }
+    init();
   </script>
 </body>
 </html>
