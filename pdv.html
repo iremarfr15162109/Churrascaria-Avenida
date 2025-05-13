@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>PDV - Churrascaria Avenida</title>
+  <style>
+    body { font-family: sans-serif; margin: 0; display: flex; height: 100vh; }
+    #produtos, #caixa { padding: 16px; overflow-y: auto; }
+    #produtos { width: 40%; background: #fafafa; border-right: 1px solid #ddd; }
+    #caixa { width: 60%; }
+    .produto { padding: 8px; margin: 8px 0; background: #fff; border: 1px solid #ccc; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
+    th:first-child, td:first-child { text-align: left; }
+    .remove { color: #c00; cursor: pointer; }
+    .payments { margin-top: 16px; }
+    .payments label { margin-right: 12px; }
+    #qrModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5);
+               align-items:center; justify-content:center; }
+    #qrModal .content { background:#fff; padding:20px; border-radius:4px; text-align:center; }
+  </style>
+</head>
+<body>
+
+  <!-- Lista de Produtos -->
+  <div id="produtos">
+    <h2>Produtos</h2>
+    <!-- Será preenchido via JavaScript -->
+  </div>
+
+  <!-- Caixa / Carrinho -->
+  <div id="caixa">
+    <h2>Caixa</h2>
+    <table id="carrinho">
+      <thead>
+        <tr><th>Item</th><th>Qtd</th><th>Preço</th><th>Total</th><th></th></tr>
+      </thead>
+      <tbody></tbody>
+      <tfoot>
+        <tr>
+          <th colspan="3">Total:</th>
+          <th id="total-geral">0</th>
+          <th></th>
+        </tr>
+      </tfoot>
+    </table>
+
+    <!-- Métodos de Pagamento -->
+    <div class="payments">
+      <label><input type="radio" name="pagamento" value="dinheiro" checked> Dinheiro</label>
+      <label><input type="radio" name="pagamento" value="cartao"> Cartão</label>
+      <label><input type="radio" name="pagamento" value="pix"> PIX</label>
+      <label><input type="radio" name="pagamento" value="crediario"> Crediário</label>
+    </div>
+    <div id="extras"></div>
+    <button id="finalizar">Finalizar Venda</button>
+  </div>
+
+  <!-- Modal QR Code -->
+  <div id="qrModal">
+    <div class="content">
+      <h3>PIX - Escaneie o QR Code</h3>
+      <div id="qrcode"></div>
+      <button onclick="closeQr()">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- QRCode.js via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script>
+    // Dados iniciais de exemplo
+    const produtos = [
+      { id:1, nome:'Picanha', preco:45, estoque:50 },
+      { id:2, nome:'Frango', preco:30, estoque:100 },
+      { id:3, nome:'Carvão', preco:15, estoque:200 },
+      { id:4, nome:'Refrigerante', preco:8, estoque:80 }
+    ];
+    const carrinho = [];
+
+    const elProd = document.getElementById('produtos');
+    const tbBody = document.querySelector('#carrinho tbody');
+    const elTotal = document.getElementById('total-geral');
+    const extras = document.getElementById('extras');
+
+    // Renderiza lista de produtos
+    produtos.forEach(p => {
+      const div = document.createElement('div');
+      div.className = 'produto';
+      div.textContent = `${p.nome} — R$ ${p.preco.toFixed(2)}`;
+      div.onclick = ()=>addCarrinho(p.id);
+      elProd.appendChild(div);
+    });
+
+    // Adiciona item ao carrinho
+    function addCarrinho(id) {
+      let item = carrinho.find(i=>i.id===id);
+      if (!item) {
+        const prod = produtos.find(p=>p.id===id);
+        item = { ...prod, qtd:1 };
+        carrinho.push(item);
+      } else {
+        item.qtd++;
+      }
+      renderCarrinho();
+    }
+
+    // Renderiza o carrinho
+    function renderCarrinho() {
+      tbBody.innerHTML = '';
+      let total = 0;
+      carrinho.forEach(i => {
+        const row = document.createElement('tr');
+        const sub = i.preco * i.qtd;
+        total += sub;
+        row.innerHTML = `
+          <td>${i.nome}</td>
+          <td>${i.qtd}</td>
+          <td>R$ ${i.preco.toFixed(2)}</td>
+          <td>R$ ${sub.toFixed(2)}</td>
+          <td><span class="remove" onclick="removeItem(${i.id})">X</span></td>`;
+        tbBody.appendChild(row);
+      });
+      elTotal.textContent = `R$ ${total.toFixed(2)}`;
+    }
+
+    function removeItem(id) {
+      const idx = carrinho.findIndex(i=>i.id===id);
+      if (idx>-1) carrinho.splice(idx,1);
+      renderCarrinho();
+    }
+
+    // Atualiza inputs extra conforme método
+    document.querySelectorAll('[name=pagamento]').forEach(radio=>{
+      radio.onchange = updateExtras;
+    });
+    function updateExtras() {
+      const m = document.querySelector('[name=pagamento]:checked').value;
+      extras.innerHTML = '';
+      if (m==='dinheiro') {
+        extras.innerHTML = 'Recebido: <input id="recebido" type="number" step="0.01">';
+      } else if (m==='pix') {
+        // nada adicional
+      } else if (m==='crediario') {
+        extras.innerHTML = 'Cliente: <input id="cliente" type="text">';
+      }
+    }
+    updateExtras();
+
+    // Finalizar venda
+    document.getElementById('finalizar').onclick = ()=>{
+      const metodo = document.querySelector('[name=pagamento]:checked').value;
+      const total = parseFloat(elTotal.textContent.replace('R$ ',''));
+      if (metodo==='dinheiro') {
+        const recebido = parseFloat(document.getElementById('recebido').value)||0;
+        alert(`Troco: R$ ${ (recebido - total).toFixed(2) }`);
+        carrinho.length=0; renderCarrinho();
+      }
+      else if (metodo==='cartao') {
+        alert('Venda realizada no cartão!');
+        carrinho.length=0; renderCarrinho();
+      }
+      else if (metodo==='pix') {
+        openQr(total);
+      }
+      else if (metodo==='crediario') {
+        const cliente = document.getElementById('cliente').value.trim();
+        if (!cliente) return alert('Informe o nome do cliente');
+        alert(`Venda a prazo registrada para ${cliente}`);
+        carrinho.length=0; renderCarrinho();
+      }
+    };
+
+    // Modal PIX
+    function openQr(valor) {
+      document.getElementById('qrModal').style.display='flex';
+      const qrEl = document.getElementById('qrcode');
+      qrEl.innerHTML = '';
+      QRCode.toCanvas(qrEl, `PIX://churrascaria?amount=${valor.toFixed(2)}`, { width:200 });
+    }
+    function closeQr() {
+      document.getElementById('qrModal').style.display='none';
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>DRE - Demonstrativo de Resultados</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: sans-serif; margin:0; background:#F5F5F5; }
+    header { background:#C62828; color:#fff; padding:16px; }
+    header h1 { margin:0; }
+    .controls { display:flex; gap:16px; padding:16px; background:#fff; }
+    .controls label, .controls button { font-weight:bold; color:#333; }
+    .chart-container, .table-container { background:#fff; padding:16px; overflow-x:auto; }
+    table { border-collapse:collapse; width:100%; min-width:1400px; }
+    th, td { border:1px solid #ddd; padding:8px; text-align:right; }
+    th { background:#C62828; color:#fff; position:sticky; top:0; }
+    th:first-child, td:first-child { text-align:left; position:sticky; left:0; background:#f9f9f9; }
+    .sub-row td { padding-left:24px; font-style:italic; }
+    .collapse-btn { cursor:pointer; margin-right:8px; color:#C62828; }
+    tr.positive-block td { background:#2E7D32!important; color:#fff!important; }
+    tr.negative-block td { background:#B71C1C!important; color:#fff!important; }
+    tr.highlight-row td { background:#A5D6A7!important; color:#000!important; }
+    tr.highlight-row-alt td { background:#FFF59D!important; color:#000!important; }
+    #drillModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5);
+                  align-items:center; justify-content:center; }
+    #drillModal .modal-content { background:#fff; padding:20px; border-radius:8px; width:80%; max-width:500px; }
+  </style>
+</head>
+<body>
+  <header><h1>DRE – Demonstrativo de Resultados 2025</h1></header>
+
+  <div class="controls">
+    <label>Ano:<select id="year"><option>2025</option></select></label>
+    <label>Projeto:<select id="project"><option>Churrascaria Avenida</option></select></label>
+    <button id="exportCsv">Exportar CSV</button>
+    <button onclick="window.print()">Imprimir</button>
+  </div>
+
+  <div class="chart-container">
+    <canvas id="dreChart" height="100"></canvas>
+  </div>
+
+  <div class="table-container">
+    <table id="dreTable">
+      <thead>
+        <tr>
+          <th>Conta / Mês</th><th>Jan</th><th>Fev</th><th>Mar</th><th>Abr</th><th>Mai</th><th>Jun</th>
+          <th>Jul</th><th>Ago</th><th>Set</th><th>Out</th><th>Nov</th><th>Dez</th><th>Total</th><th>% Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="positive-block"><td><span class="collapse-btn" data-group="receita">+</span>Receita Bruta</td>
+          <td>10000</td><td>12000</td><td>11500</td><td>13000</td><td>9800</td><td>14200</td>
+          <td>15000</td><td>13500</td><td>12300</td><td>11700</td><td>14000</td><td>16000</td>
+          <td>152000</td><td>100%</td></tr>
+        <tr class="sub-row group-receita"><td>• Dinheiro</td><td class="positive">4000</td><td class="positive">4800</td><td class="positive">4600</td><td class="positive">5200</td><td class="positive">3900</td><td class="positive">5600</td><td class="positive">6000</td><td class="positive">5400</td><td class="positive">4920</td><td class="positive">4680</td><td class="positive">5600</td><td class="positive">6400</td><td class="positive">61100</td><td>40%</td></tr>
+        <tr class="sub-row group-receita"><td>• Cartão</td><td class="positive">3000</td><td class="positive">4000</td><td class="positive">3500</td><td class="positive">4000</td><td class="positive">3200</td><td class="positive">4500</td><td class="positive">5000</td><td class="positive">4500</td><td class="positive">4150</td><td class="positive">3900</td><td class="positive">4700</td><td class="positive">5200</td><td class="positive">50650</td><td>33.3%</td></tr>
+        <tr class="sub-row group-receita"><td>• PIX</td><td class="positive">3000</td><td class="positive">3200</td><td class="positive">3400</td><td class="positive">3800</td><td class="positive">2700</td><td class="positive">4100</td><td class="positive">4000</td><td class="positive">3600</td><td class="positive">3230</td><td class="positive">3120</td><td class="positive">3700</td><td class="positive">4400</td><td class="positive">40250</td><td>26.5%</td></tr>
+        <tr class="sub-row group-receita"><td>• Crediário</td><td class="positive">500</td><td class="positive">600</td><td class="positive">450</td><td class="positive">700</td><td class="positive">550</td><td class="positive">650</td><td class("positive")>800</td><td class("positive")>750</td><td class("positive")>600</td><td class("positive")>500</td><td class("positive")>700</td><td class("positive")>900</td><td class("positive")>7600</td><td>5%</td></tr>
+        <tr class="negative-block"><td><span class="collapse-btn" data-group="custos">+</span>Custos do Restaurante</td>
+          <td class="negative">4000</td><td class="negative">4800</td><td class="negative">4600</td><td class="negative">5200</td><td class="negative">3900</td><td class("negative")>5600</td><td class("negative")>6000</td><td class("negative")>5400</td><td class("negative")>4920</td><td class("negative")>4680</td><td class("negative")>5600</td><td class("negative")>6400</td><td class("negative")>61100</td><td>40%</td></tr>
+        <!-- (restante das linhas de custo, despesas, lucro, margem) -->
+      </tbody>
+    </table>
+  </div>
+
+  <div id="drillModal">
+    <div class="modal-content">
+      <h3>Detalhe por Mês</h3>
+      <div id="drillContent"></div>
+      <button onclick="document.getElementById('drillModal').style.display='none'">Fechar</button>
+    </div>
+  </div>
+
+  <script>
+    // Dados e configuração do gráfico
+    const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const receita =    [10000,12000,11500,13000, 9800,14200,15000,13500,12300,11700,14000,16000];
+    const custos =     [4000, 4800, 4600, 5200, 3900, 5600, 6000, 5400, 4920, 4680, 5600, 6400];
+    const lucro = receita.map((v,i)=>v - custos[i]);
+
+    const ctx = document.getElementById('dreChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: meses,
+        datasets: [
+          { label:'Receita', data: receita, backgroundColor:'#F9A825' },
+          { label:'Custos',  data: custos,   backgroundColor:'#C62828' },
+          { label:'Lucro',   data: lucro,    backgroundColor:'#4CAF50' }
+        ]
+      },
+      options: {
+        onClick: (_, els) => {
+          if (els.length) {
+            const idx = els[0].index;
+            document.getElementById('drillContent').innerText =
+              `${meses[idx]} — R$ ${receita[idx]} receita, R$ ${custos[idx]} custos, R$ ${lucro[idx]} lucro`;
+            document.getElementById('drillModal').style.display='flex';
+          }
+        }
+      }
+    });
+
+    // Collapse/expand de linhas
+    document.querySelectorAll('.collapse-btn').forEach(btn=>{
+      btn.onclick = ()=>{
+        const g = btn.dataset.group;
+        document.querySelectorAll(`.group-${g}`)
+          .forEach(r=>r.style.display = r.style.display==='none'?'table-row':'none');
+        btn.textContent = btn.textContent==='+'?'-':'+';
+      };
+      // esconde inicialmente
+      document.querySelectorAll(`.group-${btn.dataset.group}`)
+        .forEach(r=>r.style.display='none');
+    });
+
+    // Exportar CSV
+    document.getElementById('exportCsv').onclick = ()=>{
+      const rows = Array.from(document.querySelectorAll('#dreTable tr'));
+      const csv = rows.map(r =>
+        Array.from(r.querySelectorAll('th,td'))
+             .map(c=>c.innerText).join(',')
+      ).join('\n');
+      const blob = new Blob([csv], { type:'text/csv' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = 'dre.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+  </script>
+</body>
+</html>
