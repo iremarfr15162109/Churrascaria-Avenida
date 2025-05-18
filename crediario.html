@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Churrascaria Avenida – Crediário</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root { --primary-color: #C62828; --confirm-color: #4CAF50; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f0f0; display: flex; justify-content: center; align-items: flex-start; padding: 2rem; }
+    .container { background: #fff; width: 600px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+    header { background: var(--primary-color); color: #fff; padding: 1rem; text-align: center; font-size: 1.25rem; }
+    .content { padding: 1rem; }
+    .form-group { display: flex; align-items: center; gap: .5rem; margin-bottom: 1rem; }
+    .form-group label { width: 120px; font-weight: bold; }
+    .form-group input { flex: 1; padding: .5rem; border: 1px solid #ccc; border-radius: 4px; }
+    .confirm-btn { background: var(--confirm-color); color: #fff; border: none; padding: .5rem 1rem; border-radius: 4px; cursor: pointer; }
+    .cancel-btn { background: var(--primary-color); color: #fff; border: none; padding: .5rem 1rem; border-radius: 4px; cursor: pointer; margin-left: .5rem; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { border: 1px solid #ddd; padding: .5rem; text-align: left; }
+    th { background: #f5f5f5; }
+    tbody tr:nth-child(even) { background: #fafafa; }
+    /* Modal styles */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+    .modal { background: #fff; padding: 1.5rem; border-radius: 8px; width: 90%; max-width: 400px; }
+    .modal h3 { margin-bottom: 1rem; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>Crediário</header>
+    <div class="content">
+      <div class="form-group">
+        <label for="searchClient">Buscar:</label>
+        <input type="text" id="searchClient" placeholder="Nome do cliente">
+      </div>
+      <div class="form-group">
+        <button id="addSaleBtn" class="confirm-btn">Nova Venda a Prazo</button>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Cliente</th><th>Devido (R$)</th><th>Data</th><th>Ações</th></tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal Nova Venda -->
+  <div id="saleModal" class="modal-overlay">
+    <div class="modal">
+      <h3>Nova Venda a Prazo</h3>
+      <div class="form-group"><label>Cliente:</label><input type="text" id="saleClient"></div>
+      <div class="form-group"><label>Valor:</label><input type="number" id="saleValue" step="0.01"></div>
+      <div style="text-align:center;">
+        <button id="confirmSale" class="confirm-btn">Registrar</button>
+        <button onclick="closeModal('saleModal')" class="cancel-btn">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Pagamento -->
+  <div id="payModal" class="modal-overlay">
+    <div class="modal">
+      <h3>Registrar Pagamento</h3>
+      <div class="form-group"><label>Cliente:</label><span id="payClient"></span></div>
+      <div class="form-group"><label>Devido:</label><span id="payDue"></span></div>
+      <div class="form-group"><label>Pago:</label><input type="number" id="payValue" step="0.01"></div>
+      <div style="text-align:center;">
+        <button id="confirmPay" class="confirm-btn">Confirmar</button>
+        <button onclick="closeModal('payModal')" class="cancel-btn">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let sales = [];
+    let currentId = null;
+
+    function renderTable(filter = '') {
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = '';
+      sales.filter(s => s.client.toLowerCase().includes(filter.toLowerCase()))
+           .forEach(s => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${s.client}</td>
+          <td>${s.due.toFixed(2)}</td>
+          <td>${s.date.toLocaleDateString()}</td>
+          <td>
+            <button onclick="openPay(${s.id})" class="confirm-btn">Pagar</button>
+            <button onclick="removeSale(${s.id})" class="cancel-btn">Excluir</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('searchClient').addEventListener('input', e => {
+      renderTable(e.target.value);
+    });
+
+    document.getElementById('addSaleBtn').onclick = () => openModal('saleModal');
+    document.getElementById('confirmSale').onclick = () => {
+      const client = document.getElementById('saleClient').value.trim();
+      const value = parseFloat(document.getElementById('saleValue').value);
+      if (!client || !value) return alert('Informe cliente e valor.');
+      sales.push({ id: Date.now(), client, due: value, date: new Date() });
+      closeModal('saleModal');
+      renderTable();
+    };
+
+    function openPay(id) {
+      const sale = sales.find(s => s.id === id);
+      currentId = id;
+      document.getElementById('payClient').textContent = sale.client;
+      document.getElementById('payDue').textContent    = sale.due.toFixed(2);
+      document.getElementById('payValue').value       = '';
+      openModal('payModal');
+    }
+    document.getElementById('confirmPay').onclick = () => {
+      const paid = parseFloat(document.getElementById('payValue').value);
+      const sale = sales.find(s => s.id === currentId);
+      if (!paid || paid <= 0) return alert('Valor inválido.');
+      sale.due = +(sale.due - paid).toFixed(2);
+      if (sale.due <= 0) sales = sales.filter(s => s.id !== currentId);
+      closeModal('payModal');
+      renderTable();
+    };
+
+    function removeSale(id) {
+      if (confirm('Deseja excluir esta venda?')) {
+        sales = sales.filter(s => s.id !== id);
+        renderTable();
+      }
+    }
+
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    // Initialize
+    window.onload = () => renderTable();
+  </script>
+</body>
+</html>
