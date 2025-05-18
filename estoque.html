@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Churrascaria Avenida – Gestão de Estoque</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root { --primary-color: #C62828; --confirm-color: #4CAF50; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; background: #f0f0f0; }
+    #sidebar { position: fixed; top: 0; left: -220px; width: 220px; height: 100%; background: #fff; border-right:1px solid #ddd; transition:left .3s; padding:1rem; z-index:10; }
+    #sidebar.show { left:0; }
+    #sidebar nav a { display:block; padding:.5rem 0; color:#333; text-decoration:none; cursor:pointer; }
+    #sidebar nav a:hover { background:#f0f0f0; }
+    .main { flex:1; display:flex; flex-direction:column; margin-left:0; transition:margin-left .3s; }
+    .main.shift { margin-left:220px; }
+    header { display:flex; align-items:center; background:var(--primary-color); color:#fff; padding:.5rem 1rem; }
+    .menu-btn, .config-btn { font-size:1.5rem; cursor:pointer; margin-right:1rem; }
+    .logo { flex:1; text-align:center; font-size:1.5rem; font-weight:bold; }
+    .view { display:none; flex:1; flex-direction:column; overflow:auto; }
+    .view.active { display:flex; }
+    .form-group { display:flex; align-items:center; gap:.5rem; margin:1rem; }
+    .form-group label { width:120px; font-weight:bold; }
+    .form-group input, .form-group select { flex:1; padding:.5rem; border:1px solid #ccc; border-radius:4px; }
+    table { width:100%; border-collapse:collapse; margin:1rem; }
+    th, td { border:1px solid #ddd; padding:.5rem; text-align:left; }
+    th { background:#f5f5f5; }
+    .low-stock { background:#ffe5e5; }
+    .radio-group { display:flex; gap:1rem; margin:1rem; }
+    .radio-group label { cursor:pointer; }
+    .confirm-btn { background:var(--confirm-color); color:#fff; border:none; padding:.75rem; border-radius:4px; cursor:pointer; }
+    .cancel-btn { background:var(--primary-color); color:#fff; border:none; padding:.5rem; border-radius:4px; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <nav>
+      <a onclick="showView('view-estoque')">Estoque</a>
+      <a onclick="toggleSidebar()">Fechar</a>
+    </nav>
+  </div>
+  <div class="main" id="main">
+    <header>
+      <div class="menu-btn" onclick="toggleSidebar()">☰</div>
+      <div class="logo">Gestão de Estoque</div>
+    </header>
+    <section id="view-estoque" class="view active">
+      <h2 style="margin:1rem">Gestão de Estoque Avançada</h2>
+      <!-- Adicionar novo produto -->
+      <div class="form-group">
+        <label for="newProductName">Novo produto:</label>
+        <input type="text" id="newProductName" placeholder="Nome do produto">
+      </div>
+      <div class="form-group">
+        <label for="newProductMin">Nível mínimo:</label>
+        <input type="number" id="newProductMin" placeholder="5">
+      </div>
+      <div class="form-group">
+        <label for="newProductStock">Estoque inicial:</label>
+        <input type="number" id="newProductStock" placeholder="0">
+      </div>
+      <div class="form-group">
+        <button id="addProductBtn" class="confirm-btn">Adicionar Produto</button>
+      </div>
+      <!-- Filtro e tipo de movimento -->
+      <div class="form-group">
+        <label for="filterProduct">Filtrar:</label>
+        <input type="text" id="filterProduct" placeholder="Buscar produto...">
+      </div>
+      <div class="radio-group">
+        <label><input type="radio" name="movType" value="in" checked> Entrada</label>
+        <label><input type="radio" name="movType" value="out"> Saída</label>
+      </div>
+      <!-- Formulário de Movimentação -->
+      <div class="form-group">
+        <label for="movProduct">Produto:</label>
+        <select id="movProduct"></select>
+      </div>
+      <div class="form-group">
+        <label for="movQty">Quantidade:</label>
+        <input type="number" id="movQty" placeholder="0">
+      </div>
+      <div id="groupCost" class="form-group">
+        <label for="movCost">Custo Unitário:</label>
+        <input type="number" id="movCost" placeholder="R$ 0,00" step="0.01">
+      </div>
+      <div id="groupReason" class="form-group" style="display:none;">
+        <label for="movReason">Motivo:</label>
+        <input type="text" id="movReason" placeholder="Quebra, Doação...">
+      </div>
+      <div class="form-group">
+        <button id="applyMovBtn" class="confirm-btn">Aplicar Movimento</button>
+      </div>
+      <!-- Tabela de Estoque Atual -->
+      <table id="stockTable">
+        <thead>
+          <tr><th>Produto</th><th>Estoque Atual</th><th>Nível Mínimo</th><th>Status</th><th>Ação</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </div>
+  <script>
+    let products = [
+      {id:1,name:'Churrasco',stock:20, min:5},
+      {id:2,name:'Marmitex c/ carne',stock:15, min:5},
+      {id:3,name:'Marmitex s/ carne',stock:10, min:5},
+      {id:4,name:'Carne da vitrine',stock:8, min:5}
+    ];
+    const movements = [];
+    const nextId = ()=> products.length? Math.max(...products.map(p=>p.id))+1 : 1;
+
+    function loadInventory(){
+      const sel = document.getElementById('movProduct'); sel.innerHTML='';
+      products.forEach(p=> sel.appendChild(new Option(p.name,p.id)));
+      renderStockTable(products);
+    }
+    function renderStockTable(list){
+      const tbody = document.querySelector('#stockTable tbody'); tbody.innerHTML='';
+      list.forEach(p=>{
+        const tr = document.createElement('tr');
+        const status = p.stock <= p.min ? 'Abaixo do mínimo' : 'OK';
+        tr.classList.toggle('low-stock', status==='Abaixo do mínimo');
+        tr.innerHTML = `
+          <td>${p.name}</td>
+          <td>${p.stock}</td>
+          <td>${p.min}</td>
+          <td>${status}</td>
+          <td><button onclick="removeProduct(${p.id})" class="cancel-btn">Excluir</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+    document.getElementById('filterProduct').oninput = function(){
+      const q = this.value.toLowerCase();
+      renderStockTable(products.filter(p=>p.name.toLowerCase().includes(q)));
+    };
+    document.getElementById('addProductBtn').onclick = ()=>{
+      const name = document.getElementById('newProductName').value.trim();
+      const min = parseInt(document.getElementById('newProductMin').value)||0;
+      const stock = parseInt(document.getElementById('newProductStock').value)||0;
+      if(!name) return alert('Informe o nome do produto');
+      products.push({id:nextId(),name,stock,min});
+      loadInventory();
+      alert(`Produto "${name}" adicionado!`);
+    };
+    function removeProduct(id){
+      if(!confirm('Confirma exclusão do produto?')) return;
+      products = products.filter(p=>p.id!==id);
+      loadInventory();
+    }
+    document.querySelectorAll('input[name="movType"]').forEach(r=> r.onchange = ()=>{
+      const t = document.querySelector('input[name="movType"]:checked').value;
+      document.getElementById('groupCost').style.display = t==='in'?'flex':'none';
+      document.getElementById('groupReason').style.display = t==='out'?'flex':'none';
+    });
+    document.getElementById('applyMovBtn').onclick = ()=>{
+      const type = document.querySelector('input[name="movType"]:checked').value;
+      const pid = +document.getElementById('movProduct').value;
+      const qty = +document.getElementById('movQty').value;
+      if(!qty||qty<=0) return alert('Quantidade inválida');
+      const prod = products.find(p=>p.id===pid);
+      if(type==='out'&&qty>prod.stock) return alert('Quantidade maior que estoque');
+      prod.stock += (type==='in'?qty:-qty);
+      movements.push({product:prod.name,qty,type,date:new Date(),cost:type==='in'?+document.getElementById('movCost').value:0,reason:type==='out'?document.getElementById('movReason').value:''});
+      renderStockTable(products);
+      alert(`Movimento registrado: ${type==='in'?'Entrada':'Saída'} de ${qty}x ${prod.name}`);
+    };
+    function showView(id){ document.querySelectorAll('.view').forEach(v=>v.classList.remove('active')); document.getElementById(id).classList.add('active'); loadInventory(); }
+    function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('show'); document.getElementById('main').classList.toggle('shift'); }
+    window.onload = ()=> showView('view-estoque');
+  </script>
+</body>
+</html>
